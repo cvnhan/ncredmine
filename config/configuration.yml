@@ -7,5 +7,5 @@ production:
       port: '587'
       domain: "smtp.gmail.com" 
       authentication: :plain
-      user_name: "nhancv.sp@gmail.com" 
+      user_name: "nhancv.redmine@gmail.com" 
       password: "cvnhan811728" 
