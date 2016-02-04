@@ -4,8 +4,10 @@ production:
     smtp_settings:
       enable_starttls_auto: true
       address: "smtp.gmail.com" 
-      port: '465'
+      port: "465" 
+      ssl: true
+      enable_starttls_auto: true
       domain: "smtp.gmail.com" 
-      authentication: :plain
+      authentication: :login
       user_name: "nhancv.redmine@gmail.com" 
       password: "cvnhan811728" 
