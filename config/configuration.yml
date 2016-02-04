@@ -6,6 +6,6 @@ production:
       address: "smtp.gmail.com" 
       port: '465'
       domain: "smtp.gmail.com" 
-      authentication: :ssl
+      authentication: :plain
       user_name: "nhancv.redmine@gmail.com" 
       password: "cvnhan811728" 
