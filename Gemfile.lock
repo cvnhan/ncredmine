@@ -1,3 +1,15 @@
+GIT
+  remote: https://github.com/a-ono/rich.git
+  revision: 93d1dd9526e13cf7e999e29c10c70efa65be3c25
+  specs:
+    rich (1.4.8)
+      jquery-rails
+      kaminari
+      mime-types
+      rack-raw-upload
+      rails (>= 3.2.0)
+      sass-rails
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -52,8 +64,13 @@ GEM
       xpath (~> 2.0)
     childprocess (0.5.9)
       ffi (~> 1.0, >= 1.0.11)
+    climate_control (0.0.3)
+      activesupport (>= 3.0)
+    cocaine (0.5.8)
+      climate_control (>= 0.0.3, < 1.0)
     coderay (1.1.0)
     concurrent-ruby (1.0.0)
+    copyright-header (1.0.8)
     docile (1.1.5)
     dotenv (2.1.0)
     dotenv-rails (2.1.0)
@@ -63,12 +80,17 @@ GEM
     ffi (1.9.10)
     globalid (0.3.6)
       activesupport (>= 4.1.0)
+    haml (4.0.7)
+      tilt
     htmlentities (4.3.1)
     i18n (0.7.0)
     jquery-rails (3.1.4)
       railties (>= 3.0, < 5.0)
       thor (>= 0.14, < 2.0)
     json (1.8.3)
+    kaminari (0.16.3)
+      actionpack (>= 3.0.0)
+      activesupport (>= 3.0.0)
     loofah (2.0.3)
       nokogiri (>= 1.5.9)
     mail (2.6.3)
@@ -83,6 +105,12 @@ GEM
     net-ldap (0.3.1)
     nokogiri (1.6.7.2)
       mini_portile2 (~> 2.0.0.rc2)
+    pandoc-ruby (1.0.0)
+    paperclip (4.2.4)
+      activemodel (>= 3.2.0)
+      activesupport (>= 3.2.0)
+      cocaine (~> 0.5.5)
+      mime-types
     pg (0.18.4)
     protected_attributes (1.1.3)
       activemodel (>= 4.0.1, < 5.0)
@@ -90,6 +118,8 @@ GEM
     rack-openid (1.4.2)
       rack (>= 1.1.0)
       ruby-openid (>= 2.1.8)
+    rack-raw-upload (1.1.1)
+      multi_json
     rack-test (0.6.3)
       rack (>= 1.0)
     rails (4.2.1)
@@ -123,9 +153,18 @@ GEM
       json (~> 1.4)
     redcarpet (3.1.2)
     request_store (1.0.5)
+    resort (0.5.0)
+      activerecord (~> 4)
     rmagick (2.15.4)
     ruby-openid (2.3.0)
     rubyzip (1.1.7)
+    sass (3.4.21)
+    sass-rails (5.0.4)
+      railties (>= 4.0.0, < 5.0)
+      sass (~> 3.1)
+      sprockets (>= 2.8, < 4.0)
+      sprockets-rails (>= 2.0, < 4.0)
+      tilt (>= 1.1, < 3)
     selenium-webdriver (2.50.0)
       childprocess (~> 0.5)
       multi_json (~> 1.0)
@@ -154,6 +193,7 @@ GEM
     sqlite3 (1.3.11)
     thor (0.19.1)
     thread_safe (0.3.5)
+    tilt (2.0.2)
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
     websocket (1.2.2)
@@ -171,12 +211,18 @@ DEPENDENCIES
   builder (>= 3.0.4)
   capybara
   coderay (~> 1.1.0)
+  copyright-header (~> 1.0.8)
   dotenv-rails
+  haml (~> 4.0.6)
+  htmlentities
   jquery-rails (~> 3.1.1)
+  kaminari
   mime-types
   minitest
   mocha
   net-ldap (~> 0.3.1)
+  pandoc-ruby
+  paperclip (~> 4.2.1)
   pg
   protected_attributes
   rack-openid
@@ -186,8 +232,11 @@ DEPENDENCIES
   rdoc (>= 2.4.2)
   redcarpet (~> 3.1.2)
   request_store (= 1.0.5)
+  resort (~> 0.5.0)
+  rich!
   rmagick (>= 2.0.0)
   ruby-openid (~> 2.3.0)
+  sass (~> 3.4.15)
   selenium-webdriver
   shoulda
   simplecov (~> 0.9.1)
