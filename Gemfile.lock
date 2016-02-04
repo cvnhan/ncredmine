@@ -70,7 +70,6 @@ GEM
       climate_control (>= 0.0.3, < 1.0)
     coderay (1.1.0)
     concurrent-ruby (1.0.0)
-    copyright-header (1.0.8)
     coveralls (0.8.0)
       multi_json (~> 1.10)
       rest-client (>= 1.6.8, < 2)
@@ -88,8 +87,6 @@ GEM
     ffi (1.9.10)
     globalid (0.3.6)
       activesupport (>= 4.1.0)
-    haml (4.0.7)
-      tilt
     htmlentities (4.3.1)
     http-cookie (1.0.2)
       domain_name (~> 0.5)
@@ -165,8 +162,6 @@ GEM
     redcarpet (3.1.2)
     redmine_crm (0.0.22)
     request_store (1.0.5)
-    resort (0.5.0)
-      activerecord (~> 4)
     rest-client (1.8.0)
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 3.0)
@@ -234,10 +229,8 @@ DEPENDENCIES
   builder (>= 3.0.4)
   capybara
   coderay (~> 1.1.0)
-  copyright-header (~> 1.0.8)
   coveralls
   dotenv-rails
-  haml (~> 4.0.6)
   htmlentities
   jquery-rails (~> 3.1.1)
   kaminari
@@ -257,11 +250,9 @@ DEPENDENCIES
   redcarpet (~> 3.1.2)
   redmine_crm
   request_store (= 1.0.5)
-  resort (~> 0.5.0)
   rich!
   rmagick (>= 2.0.0)
   ruby-openid (~> 2.3.0)
-  sass (~> 3.4.15)
   selenium-webdriver
   shoulda
   simplecov (~> 0.9.1)
