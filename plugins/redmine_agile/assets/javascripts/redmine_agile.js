@@ -1,5 +1,5 @@
 (function() {
-  var AgileBoard = function() {};
+  // var AgileBoard = function() {};
   var PlanningBoard = function() {};
 
   PlanningBoard.prototype = {
@@ -11,6 +11,11 @@
       $(function() {
         self.initSortable();
       });
+    },
+
+    // If there are no changes
+    backSortable: function($oldColumn) {
+      $oldColumn.sortable('cancel');
     },
 
     successSortable: function($oldColumn, $column) {
@@ -41,21 +46,7 @@
     },
 
     errorSortable: function($oldColumn, responseText) {
-      try {
-        var errors = JSON.parse(responseText);
-      } catch(e) {
-
-      };
-      var alertMessage = '';
-
-      $oldColumn.sortable('cancel');
-
-      if (errors && errors.length > 0) {
-        for (var i = 0; i < errors.length; i++) {
-          alertMessage += errors[i] + '\n';
-        }
-      }
-
+      var alertMessage = parseErrorResponse(responseText);
       if (alertMessage) {
         setErrorMessage(alertMessage);
       };
@@ -70,6 +61,7 @@
         start: function(event, ui) {
           var $item = $(ui.item);
           $item.attr('oldColumnId', $item.parent().data('id'));
+          $item.attr('oldPosition', $item.index());
         },
         stop: function(event, ui) {
           var $item = $(ui.item);
@@ -81,6 +73,11 @@
           var positions = {};
           var oldId = $item.attr('oldColumnId');
           var $oldColumn = $('.ui-sortable[data-id="' + oldId + '"]');
+
+          if(!self.hasChange($item)){
+            self.backSortable($column);
+            return;
+          }
 
           $column.find('.issue-card').each(function(i, e) {
             var $e = $(e);
@@ -111,63 +108,59 @@
 
     },
 
+    hasChange: function($item){
+      var column = $item.parents('.issue-version-col');
+      return $item.attr('oldColumnId') != column.data('id') || // Checks a version change
+             $item.attr('oldPosition') != $item.index();
+    },
+
   }
 
-  AgileBoard.prototype = {
+  function AgileBoard(routes){
 
-    init: function(routes) {
-      var self = this;
-      self.routes = routes;
-
-      $(function() {
-        self.initSortable();
-        self.initDraggable();
-        self.initDroppable();
+    // ----- estimated hours ------
+    this.recalculateEstimateHours = function(oldStatusId, newStatusId, value){
+      oldStatusElement = $('th[data-column-id="' + oldStatusId + '"]');
+      newStatusElement = $('th[data-column-id="' + newStatusId + '"]');
+      oldStatusElement.each(function(i, elem){
+        changeHtmlNumber(elem, -value);
       });
-    },
-
-    successSortable: function(oldStatusId, newStatusId, oldSwimLaneId, newSwimLaneId) {
+      newStatusElement.each(function(i, elem){
+        changeHtmlNumber(elem, value);
+      });
+    };
+    this.successSortable = function(oldStatusId, newStatusId, oldSwimLaneId, newSwimLaneId) {
       clearErrorMessage();
-      decHtmlNumber('th[data-column-id="' + oldStatusId + '"] span.count');
-      incHtmlNumber('th[data-column-id="' + newStatusId + '"] span.count');
-      decHtmlNumber('tr.group.swimlane[data-id="' + oldSwimLaneId + '"] td span.count');
-      incHtmlNumber('tr.group.swimlane[data-id="' + newSwimLaneId + '"] td span.count');
-    },
+    };
 
-    errorSortable: function($oldColumn, responseText) {
-      try {
-        var errors = JSON.parse(responseText);
-      } catch(e) {
-
-      };
-
-      var alertMessage = '';
-
+    // If there are no changes
+    this.backSortable = function($oldColumn) {
       $oldColumn.sortable('cancel');
+    };
 
-      if (errors && errors.length > 0) {
-        for (var i = 0; i < errors.length; i++) {
-          alertMessage += errors[i] + '\n';
-        }
-      }
+    this.errorSortable = function($oldColumn, responseText) {
+      var alertMessage = parseErrorResponse(responseText);
       if (alertMessage) {
         setErrorMessage(alertMessage);
       }
-    },
+    };
 
-    initSortable: function() {
+    this.initSortable = function() {
       var self = this;
       var $issuesCols = $(".issue-status-col");
 
       $issuesCols.sortable({
+        items: '.issue-card',
         connectWith: ".issue-status-col",
         start: function(event, ui) {
           var $item = $(ui.item);
           $item.attr('oldColumnId', $item.parent().data('id'));
           $item.attr('oldSwimLaneId', $item.parents('tr.swimlane').data('id'));
           $item.attr('oldSwimLaneField', $item.parents('tr.swimlane').attr('data-field'));
+          $item.attr('oldPosition', $item.index());
         },
         stop: function(event, ui) {
+          var that = this;
           var $item = $(ui.item);
           var sender = ui.sender;
           var $column = $item.parents('.issue-status-col');
@@ -183,6 +176,19 @@
           var oldSwimLaneField = $item.attr('oldSwimLaneField');
           var $oldColumn = $('.ui-sortable[data-id="' + oldStatusId + '"]');
 
+          if(!self.hasChange($item)){
+            self.backSortable($column);
+            return;
+          }
+          
+          if ($column.hasClass("closed")){
+            $item.addClass("float-left")
+          }
+          else{
+            $item.removeClass("closed-issue");
+            $item.removeClass("float-left")
+          }
+
           $column.find('.issue-card').each(function(i, e) {
             var $e = $(e);
             positions[$e.data('id')] = { position: $e.index() };
@@ -195,7 +201,7 @@
               positions: positions,
               id: issue_id
             }
-            params['issue'][swimLaneField] = swimLaneId;
+          params['issue'][swimLaneField] = swimLaneId;
 
           $.ajax({
             url: self.routes.update_agile_board_path,
@@ -203,26 +209,43 @@
             data: params,
             success: function(data, status, xhr) {
               self.successSortable(oldStatusId, newStatusId, oldSwimLaneId, swimLaneId);
+              $($item).replaceWith(data);
+              estimatedHours = $($item).find("span.hours");
+              if(estimatedHours.size() > 0){
+                hours = $(estimatedHours).html().replace(/(\(|\)|h)?/g, '');
+                // self.recalculateEstimateHours(oldStatusId, newStatusId, hours);
+              }
             },
             error: function(xhr, status, error) {
               self.errorSortable($oldColumn, xhr.responseText);
+              $(that).sortable( "cancel" );
             }
           });
         }
       }).disableSelection();
 
-    },
+    };
 
-    initDraggable: function() {
-      $(".assignable-user").draggable({
-        helper: "clone",
-        start: function startDraggable(event, ui) {
-          $(ui.helper).addClass("draggable-active")
-        }
-      });
-    },
+    this.initDraggable = function() {
+      if ($("#group_by").val() != "assigned_to"){
+        $(".assignable-user").draggable({
+                helper: "clone",
+                start: function startDraggable(event, ui) {
+                  $(ui.helper).addClass("draggable-active")
+                }
+              });
+      }
+    };
 
-    initDroppable: function() {
+    this.hasChange = function($item){
+      var column = $item.parents('.issue-status-col');
+      var swimlane = $item.parents('tr.swimlane');
+      return $item.attr('oldColumnId') != column.data('id') || // Checks the status change
+             $item.attr('oldSwimLaneId') != swimlane.data('id') ||
+             $item.attr('oldPosition') != $item.index();
+    };
+
+    this.initDroppable = function() {
       var self = this;
 
       $(".issue-card").droppable({
@@ -232,23 +255,109 @@
         tolerance: 'pointer',
         drop: function(event, ui) {
           var $self = $(this);
-
           $.ajax({
-            url: self.routes.issues_path + '/' + $self.data("id"),
+            url: self.routes.update_agile_board_path,
             type: "PUT",
-            dataType: "json",
+            dataType: "html",
             data: {
               issue: {
                 assigned_to_id: ui.draggable.data("id")
-              }
+              },
+              id: $self.data("id")
+            },
+            success: function(data, status, xhr){
+              $self.replaceWith(data);
+            },
+            error:function(xhr, status, error) {
+              alert(error);
             }
           });
           $self.find("p.info").show();
           $self.find("p.info").html(ui.draggable.clone());
         }
       });
-    },
+    };
 
+    this.getToolTipInfo = function(node, url){
+      var issue_id = $(node).parents(".issue-card").data("id");
+      var tip = $(node).children(".tip");
+      if( $(tip).html() && $(tip).html().trim() != "")
+        return;
+      $.ajax({
+          url: url,
+          type: "get",
+          dataType: "html",
+          data: {
+            id: issue_id
+          },
+          success: function(data, status, xhr){
+            $(tip).html(data);
+          },
+          error:function(xhr, status, error) {
+            $(tip).html(error);
+          }
+      });
+    }
+
+    this.saveInlineComment = function(node, url){
+      var comment = $(node).siblings("textarea").val();
+      var card = $(node).parents(".issue-card");
+      if (comment != ""){
+        $.ajax({
+          url: url,
+          type: "PUT",
+          dataType: "html",
+          data: { issue: { notes: comment } },
+          success: function(data, status, xhr){
+            $(card).replaceWith(data);
+          },
+          error: function(xhr, status, error){
+            var alertMessage = parseErrorResponse(xhr.responseText);
+            if (alertMessage) {
+              setErrorMessage(alertMessage);
+            }
+          }
+        })
+      }
+    }
+
+    this.createIssue = function(url){
+      $('.add-issue').click(function(){
+        $(this).children('.new-card__input').focus();
+      });
+      $('.new-card__input').keyup(function(evt){
+        var node = this;
+        evt = evt || window.event;
+        if (evt.keyCode == 13 && $(node).val()) {
+          $.ajax({
+            url: url,
+            type: "POST",
+            data: {
+              subject: $(node).val(),
+              status_id: $(node).parents('td').data('id')
+            },
+            dataType: "html",
+            success: function(data, status, xhr){
+              $(node).parent().before(data);
+              $(node).val('');
+            },
+            error:function(xhr, status, error) {
+              var alertMessage = parseErrorResponse(xhr.responseText);
+              if (alertMessage) {
+                setErrorMessage(alertMessage);
+              }
+            }
+          });
+        }
+      });
+    }
+
+    this.routes = routes;
+
+    this.initSortable();
+    this.initDraggable();
+    this.initDroppable();
+    this.createIssue(routes.create_issue_path);
   }
 
   window.AgileBoard = AgileBoard;
@@ -282,7 +391,7 @@
               .find('tbody')
               .remove()
               .end()
-              .css({'display': 'table', 'top': '0px', 'position': 'fixed', 'z-index': '1'})
+              .css({'display': 'table', 'top': '0px', 'position': 'fixed'})
               .insertBefore($this)
               .hide();
       }
@@ -314,14 +423,13 @@
               $tableFixed.css('display', 'none');
           } else if (offset >= tableOffsetTop && offset <= tableOffsetBottom) {
               $tableFixed.css('display', 'table');
+              // Fix for chrome not redrawing header
+              $tableFixed.css('z-index', '1');
           }
       }
 
-      $hideButton.click(function() {
-          resizeFixed();
-      });
 
-      $fullScreenButton.click(function() {
+      function bindScroll() {
           if ($html.hasClass('agile-board-fullscreen')) {
               $('div.agile-board.autoscroll').scroll(scrollFixed);
               $(window).unbind('scroll');
@@ -330,22 +438,60 @@
               $('div.agile-board.autoscroll').unbind('scroll');
               $tableFixed.hide();
           }
+      }
+      
+      $hideButton.click(function() {
+          resizeFixed();
       });
 
-      $(window).scroll(scrollFixed);
+      $fullScreenButton.click(function() {
+        bindScroll();
+      });
+
       $(window).resize(resizeFixed);
 
+      $(window).keyup(function(evt){
+          if (evt.keyCode == 27) {
+              $('html.agile-board-fullscreen').removeClass('agile-board-fullscreen');
+              $(".issue-card").addClass("hascontextmenu");
+              bindScroll();
+          }
+        }
+      );
+
       init();
+      bindScroll();
+
     });
   };
 })();
 
-function setErrorMessage(message) {
+function parseErrorResponse(responseText){
+  try {
+    var errors = JSON.parse(responseText);
+  } catch(e) {
+
+  };
+
+  var alertMessage = '';
+
+  if (errors && errors.length > 0) {
+    for (var i = 0; i < errors.length; i++) {
+      alertMessage += errors[i] + '\n';
+    }
+  }
+  return alertMessage;
+}
+
+function setErrorMessage(message, flashClass) {
+  flashClass = flashClass || "error"
+  $('div#agile-board-errors').addClass("flash " + flashClass);
   $('div#agile-board-errors').html(message).show();
   setTimeout(clearErrorMessage,3000);
 }
 
 function clearErrorMessage() {
+  $('div#agile-board-errors').removeClass();
   $('div#agile-board-errors').html('').hide();
 }
 
@@ -356,6 +502,22 @@ function incHtmlNumber(element) {
 
 function decHtmlNumber(element) {
   $(element).html(~~$(element).html() - 1);
+}
+
+function changeHtmlNumber(element, number){
+  elementWithHours = $(element).find("span.hours");
+  if (elementWithHours.size() > 0){
+    old_value = $(elementWithHours).html().replace(/(\(|\)|h)/);
+    new_value = parseFloat(old_value)+ parseFloat(number);
+    if (new_value > 0)
+      $(elementWithHours).html(new_value.toFixed(2) + "h");
+    else
+      $(elementWithHours).remove();
+  }
+  else{
+    new_value = number;
+    $(element).append("<span class='hours'>" + new_value + "h</span>");
+  }
 }
 
 
@@ -402,6 +564,44 @@ function recalculateHours() {
     currentSum += hours;
   })
   $('.versions-planning-board .current-hours').text('(' + currentSum.toFixed(2) + 'h)');
+}
+
+function showInlineCommentNode(quick_comment){
+  if(quick_comment){
+    $(quick_comment).siblings(".last_comment").hide();
+    $(quick_comment).show();
+    $(quick_comment).children("textarea").focus();
+  }
+}
+
+function showInlineComment(node, url){
+  var quick_comment = $(node).parents(".fields").children(".quick-comment");
+  if ( $(quick_comment).html().trim() != '' ){
+    showInlineCommentNode(quick_comment);
+  }
+  else{
+    $.ajax({
+        url: url,
+        type: "get",
+        dataType: "html",
+        success: function(data, status, xhr){
+          $(quick_comment).html(data);
+          showInlineCommentNode(quick_comment);
+        },
+        error:function(xhr, status, error) {
+          var alertMessage = parseErrorResponse(xhr.responseText);
+          if (alertMessage) {
+            setErrorMessage(alertMessage);
+          }
+        }
+    })
+  };
+}
+
+function cancelInlineComment(node){
+  $(node).parent().hide();
+  $(node).parent().siblings(".last_comment").show();
+  return false;
 }
 
 $(document).ready(function(){

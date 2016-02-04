@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2015 RedmineCRM
+# Copyright (C) 2011-2016 RedmineCRM
 # http://www.redminecrm.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -22,6 +22,25 @@
 module RedmineAgile
   module AgileHelper
 
+    def retrieve_agile_query_from_session
+      if session[:agile_query]
+        if session[:agile_query][:id]
+          @query = AgileQuery.find_by_id(session[:agile_query][:id])
+          return unless @query
+        else
+          @query = AgileQuery.new(get_query_attributes_from_session)
+        end
+        if session[:agile_query].has_key?(:project_id)
+          @query.project_id = session[:agile_query][:project_id]
+        else
+          @query.project = @project
+        end
+        @query
+      else
+        @query = AgileQuery.new(:name => "_")
+      end
+    end
+
     def retrieve_agile_query
       if !params[:query_id].blank?
         cond = "project_id IS NULL"
@@ -33,26 +52,42 @@ module RedmineAgile
         sort_clear
       elsif api_request? || params[:set_filter] || session[:agile_query].nil? || session[:agile_query][:project_id] != (@project ? @project.id : nil)
         unless @query
-          @query = AgileQuery.new(:name => "_")
-          @query.project = @project if @project
+          @query = AgileQuery.new(:name => "_", :project => @project)
           @query.build_from_params(params)
+        else
+          @query.project = @project if @project
         end
-        session[:agile_query] = {:project_id => @query.project_id,
-                                 :filters => @query.filters,
-                                 :group_by => @query.group_by,
-                                 :color_base => (@query.respond_to?(:color_base) && @query.color_base),
-                                 :column_names => @query.column_names}
+        save_qeury_attribures_to_session(@query)
       else
         # retrieve from session
         @query = nil
+        if session[:agile_query] && !session[:agile_query][:id] && !params[:project_id]
+          @query = AgileQuery.new(get_query_attributes_from_session)
+        end
+        
         @query ||= AgileQuery.find_by_id(session[:agile_query][:id]) if session[:agile_query][:id]
-        @query ||= AgileQuery.new(:name => "_",
-                                  :filters => session[:agile_query][:filters],
-                                  :group_by => session[:agile_query][:group_by],
-                                  :color_base => session[:agile_query][:color_base],
-                                  :column_names => session[:agile_query][:column_names])
+        @query ||= AgileQuery.new(get_query_attributes_from_session)
         @query.project = @project
+        save_qeury_attribures_to_session(@query)
       end
+    end
+
+    def retrieve_versions_query
+      @query = AgileVersionsQuery.new
+      @query.project = @project if @project
+                end
+    def options_card_colors_for_select(selected, options={})
+      color_base = [[l(:label_agile_color_no_colors), "none"],
+        [l(:label_issue), "issue"],
+        [l(:label_tracker), "tracker"],
+        [l(:field_priority), "priority"],
+        [l(:label_spent_time), "spent_time"],
+        [l(:field_assigned_to), "user"]]
+      if (@project && @project.children.any?) || !@project
+        color_base << [l(:field_project), 'project']
+      end
+      options_for_select(color_base.compact,
+        selected)
     end
 
     def options_charts_for_select(selected, options={})
@@ -64,6 +99,29 @@ module RedmineAgile
 
     def render_agile_chart(chart_name, issues_scope)
       render :partial => "agile_charts/chart", :locals => {:chart => chart_name, :issues_scope => issues_scope}
+    end
+
+    private
+
+    def get_query_attributes_from_session
+      attributes = {
+        :name => "_", 
+        :filters => session[:agile_query][:filters], 
+        :group_by => session[:agile_query][:group_by], 
+        :column_names => session[:agile_query][:column_names],
+        :color_base => session[:agile_query][:color_base]
+      }
+      (attributes[:options] = session[:agile_query][:options] || {}) if Redmine::VERSION.to_s > '2.4'
+      attributes
+    end
+
+    def save_qeury_attribures_to_session(query)
+      session[:agile_query] = {:project_id => query.project_id,
+                                 :filters => query.filters,
+                                 :group_by => query.group_by,
+                                 :color_base => (query.respond_to?(:color_base) && query.color_base),
+                                 :column_names => query.column_names}
+      (session[:agile_query][:options] = query.options) if Redmine::VERSION.to_s > '2.4'
     end
 
   end

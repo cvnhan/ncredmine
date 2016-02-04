@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2015 RedmineCRM
+# Copyright (C) 2011-2016 RedmineCRM
 # http://www.redminecrm.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -45,7 +45,7 @@ class AgileJournalDetailsController < ApplicationController
   private
 
   def find_issue
-    @issue = Issue.find(params[:issue_id])
+    @issue = Issue.eager_load(:journals => :details).find(params[:issue_id])
     raise Unauthorized unless @issue.visible?
     @project = @issue.project
   rescue ActiveRecord::RecordNotFound
