@@ -23,7 +23,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../../test/test_helper')
 
 
 if ActiveRecord::VERSION::MAJOR >= 4
-  class RedmineChecklists::IntegrationTest < ActionDispatch::IntegrationTest; end
+  class RedmineChecklists::IntegrationTest < Redmine::IntegrationTest; end
 else
   class RedmineChecklists::IntegrationTest < ActionController::IntegrationTest; end
 end
@@ -46,6 +46,11 @@ class RedmineChecklists::TestCase
 
     Role.find(3, 4).each do |r|
       r.permissions << :done_checklists
+      r.save
+    end
+
+    Role.find([2]).each do |r|
+      r.permissions << :manage_checklist_templates
       r.save
     end
 

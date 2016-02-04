@@ -57,7 +57,18 @@ class Checklist < ActiveRecord::Base
   validates_presence_of :position
   validates_numericality_of :position
 
-  after_save :recalc_issue_done_ratio
+  def self.recalc_issue_done_ratio(issue_id)
+    issue = Issue.find(issue_id)
+    return false if (Setting.issue_done_ratio != "issue_field") || !RedmineChecklists.settings[:issue_done_ratio] || issue.checklists.empty?
+    done_checklist = issue.checklists.map{|c| c.is_done ? 1 : 0}
+    done_ratio = (done_checklist.count(1) * 10) / done_checklist.count * 10
+    issue.update_attribute(:done_ratio, done_ratio)
+  end
+
+  def self.old_format?(detail)
+    (detail.old_value.is_a?(String) && detail.old_value.match(/^\[[ |x]\] .+$/).present?) ||
+      (detail.value.is_a?(String) && detail.value.match(/^\[[ |x]\] .+$/).present?)
+  end
 
   safe_attributes 'subject', 'position', 'issue_id', 'is_done'
 
@@ -72,13 +83,5 @@ class Checklist < ActiveRecord::Base
   def info
     "[#{self.is_done ? 'x' : ' ' }] #{self.subject.strip}"
   end
-
-  def recalc_issue_done_ratio
-    return false if (Setting.issue_done_ratio != "issue_field") || !RedmineChecklists.settings[:issue_done_ratio]
-    done_checklist = issue.checklists.map{|c| c.is_done ? 1 : 0}
-    issue.done_ratio = (done_checklist.count(1) * 10) / done_checklist.count * 10
-    issue.save
-  end
-
 
 end
