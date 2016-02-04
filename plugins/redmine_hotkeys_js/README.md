@@ -6,7 +6,19 @@ Add some hotkeys for common actions:
 * ctrl + enter : active form submit
 * project tabs switching
 * issue status changes
+* navigation on issues list (yandex mail - like)
 
+### Navigation on issues list
+
+* "ArrowDown", "ArrowUp" to focus  issue
+* "Space" (or Shift+Up/Down) to select (check/uncheck) issue
+* "Enter" to open issue
+
+Make as in mail.yandex.ru. Tested on RM 2.6; FF, Opera, IE8.
+
+### Project list
+
+* ctrl + alt + p: project list select open
 
 ### Project tabs switching
 
@@ -27,7 +39,7 @@ Based on default status list (script use ids, not names):
 * Feedback : 4 (ctrl + shift + f)
 * Closed : 5 (ctrl + shift + c)
 
-Where are some smart actions added for "Resolved" and "Feedback" shortcuts:
+#### Where are some smart actions added for "Resolved" and "Feedback" shortcuts:
 
 * "Resolved" status set issue assignee to its author
 * "Feedback" return issue to previous assignee
@@ -45,13 +57,12 @@ you may edit vars:
 
 ## TODO
 
-* project switching
 * hotkeys customize from "settings" page
 * hotkeys help window
 * Edit issue watchers
 * Prev/next issue navigation (?)
 * hide/show right side page bar
-* keyboard navigation on issues list (yandex mail - like)
+* context menu keyboard nav (?)
 * some ajax functions
 * * change issue status/assignee on a fly (?)
 
